@@ -11,32 +11,34 @@ app.use(express.static(path.join(__dirname, '../../dist')));
 
 const url = 'http://localhost:8888';
 
-let nightmare = null;
-beforeEach(() => { nightmare = new Nightmare() })
+const nightmare = new Nightmare();
+
+//beforeEach(() => { nightmare = new Nightmare() })
+
+let httpServer = null;
+let pageObject = null;
+
+before((done) => {
+    httpServer = app.listen(8888);
+    done();
+});
+
+beforeEach(() => {
+    pageObject = nightmare.goto(url);
+});
+
+after((done) => {
+    httpServer.close();
+    done();
+});
 
 describe('End to End Tests', () => { 
-    let httpServer = null;
-    let pageObject = null;
-
-    before((done) => {
-        httpServer = app.listen(8888);
-        done();
-    });
-
-    beforeEach(() => {
-        pageObject = nightmare.goto(url);
-    });
-
-    after((done) => {
-        httpServer.close();
-        done();
-    });
 
     it('should return 200 status', function (done) {
         new Nightmare()
             .goto(url)
             .then(function (response) {
-                response.code.should.equal(200);
+                expect(response.code).to.equal(200);
                 done();
             });
     });
@@ -46,16 +48,16 @@ describe('End to End Tests', () => {
             .evaluate(() => document.querySelector('h1').innerText)
             .then(headerText => {
                 expect(headerText).to.not.be.null;
-                headerText.should.equal('Mortgage Calculator!');
+                expect(headerText).to.equal('Mortgage Calculator');
             });
     });
 
     it('should contain an <input> element named principal', () => { 
-        pageObject
+        return pageObject
             .evaluate(() => document.querySelector('input[name=principal]').name)
             .then(headerText => {
                 expect(headerText).to.not.be.null;
-                expect(headerText).to.equal('notprincipal');
+                expect(headerText).to.equal('principal');
             });
     });
 
